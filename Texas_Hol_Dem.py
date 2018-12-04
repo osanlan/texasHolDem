@@ -1,5 +1,5 @@
 from random import shuffle
-
+##Fanni
 def getDeck():
     suits = ["Spades","Hearts","Clubs","Diamonds"]
     deckOfCards = []
