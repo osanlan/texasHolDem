@@ -1,5 +1,5 @@
 from random import shuffle
-##Fanni
+
 def getDeck():
     suits = ["Spades","Hearts","Clubs","Diamonds"]
     deckOfCards = []
@@ -16,8 +16,8 @@ def getPlayers(n):
     status = ""
     money = eval(input("How much money? "))
     for i in range(n):
-        #name, status, money, hand, allin(0 or pot)
-        players.append([input("Player name: "),status,money,[],0])
+        #name, status, money, hand, ammount bet
+        players.append([input("Player name: "),status,money,[],0,0])
     dealCards(players)
     return players
     
@@ -39,19 +39,18 @@ def dealTable():
         deck.pop(len(deck)-1)
     return table
 
-#def playerTurn(player,tableCards):
+
 ##    Show what is on the table (0-5 cards) and in this players hand
 ##    Show what has been betted by other players
 ##    Show how much money player has left
 ##    Show how much money other players have left
 ##    Ask the player what they want to do: fold,raise,call,check,all_in,savegame
-    # Fold: give up this round - Ready
-        # Folded player cant play anymore 
-    # Check: keep playing without raising - Ready
-    # Call: match what has been betted by other players - Ready
-    # Raise: bet more than others have - Ready but all other players are Not Ready
-    # All_in: bet all your moneys, set allin to current pot - Ready
-    # Savegame: game is paused and saved to file
+def playerTurn(player,tableC):
+    print("Table ", cardsToText(table[:tableC]))
+    print("Player",player[0],player[1])
+    print("Your hand:",cardsToText(player[3]))
+    return (input("Check, fold, call, raise/all in or savegame:"))
+    
     
 
 #def checkWinner(players,table):
@@ -85,89 +84,114 @@ def saveGame(name):
 ##        acting player
 ##        pot
     with open("texas.txt","w") as file:
-        file.write(deck,table)
+        file.write(str(deck))#,table))
+        
 ##def saveWinner(nameW):
 ####    When game ends save the winner and much they won
-##
-##def cardsToText(cards):
-####    Converts given cards to readable form
-##    hand = []
-##    # If face card convert to letters
-##    for i in listOfCards:
-##        if i[1] == 11:
-##            hand.append("J of "+ str(i[0]))  #   i[0] = suit
-##        elif i[1] == 12:
-##            hand.append("Q of "+str(i[0]))
-##        elif i[1] == 13:
-##            hand.append("K of "+str(i[0]))
-##        elif i[1] == 1:
-##            hand.append("A of "+str(i[0]))
-##        else:
-##            hand.append(str(i[1])+ " of "+str(i[0]))
-##    #print (', '.join(hand))
+
+def cardsToText(cards):
+##    Converts given cards to readable form
+    hand = []
+    # If face card convert to letters
+    for i in cards:
+        if i[1] == 11:
+            hand.append("J of "+ str(i[0]))  #   i[0] = suit
+        elif i[1] == 12:
+            hand.append("Q of "+str(i[0]))
+        elif i[1] == 13:
+            hand.append("K of "+str(i[0]))
+        elif i[1] == 1:
+            hand.append("A of "+str(i[0]))
+        else:
+            hand.append(str(i[1])+ " of "+str(i[0]))
+    return (', '.join(hand))
 
     
 def main():
     global deck
     deck = getDeck()
     players = getPlayers(eval(input("How many players? ")))
+    global table
     table = dealTable()
     pot = 0
     blind = eval(input("How much is blind? "))
+    
     # Players take turns until every
     # player after the last raise has checked, folded, called or
     # someone saves the game
-    ready = False
+    
+    highestBet = blind
     blindStatus = 0
     betInc = blind
-    while ready == False:
-        for i in range(len(players)):
-            if blindStatus == 0:
-                #Must raise blind
-                blindStatus = 1
-                continue
-            
-            if player[i][1] == "fold":
-                continue
-            
-            playerTurn(players[i], 0)
-            if players[i][1][:5] == "raise":
-                bet = eval(players[i][1][6:])
-                pot += bet
-                betInc = bet
-                players[i][2] += -(bet)
-                ready = False
-                
-            elif players[i][1] == "fold":
-                ready = True
-                
-            elif players[i][1] == "all_in":
-                pot += players[i][2]
-                players[i][2] = 0
-                players[i][4] = pot
-                ready = True
-                
-            elif players[i][1] == "call":  
-                pot += betInc
-                ready = True
-                
-            elif players[i][1] == "savegame":
-                savegame("homoW")
-                    
-            status.append(players[i][1]) #Player from index i of players -> status
-            
-    #while loop raise
-        for player in players:
-            playerTurn(player, 3)
+    tc = 0
     
-    #while loop raise
-        for player in players:
-            playerTurn(player, 4)
-    
-    #while loop raise
-        for player in players:
-            playerTurn(player, 5)
+    for tc in [0,3,4,5]:
+        while all(not(pl[4] == highestBet or pl[5] == 1) for pl in players):
+            print("")
+            for i in range(len(players)):
+                print("\n")
+                if blindStatus == 0:        # 1st player must pay blind
+                    print("Player",players[i][0],"has blind of",blind)
+                    blindStatus = 1
+                    players[i][4] = blind
+                    continue
+                if players[i][0] == "no":
+                    continue
+                
+                
+                if players[i][5] == 1:
+                    print("Player",players[i][0],"has allin'd")
+                    continue
+                
+                x = 0
+                for p in players:
+                    if p[1] == "fold":
+                        x += 1
+                
+                if x == len(players)-1:
+                    #If all others have folded you win
+                    print("others folded,",players[i][0],"won")
+                    break
+                #print(players[i][4])
 
+                if players[i][4] <= highestBet:
+                    #print("ykko")
+                    players[i][1] = playerTurn(players[i], tc)
+                    if players[i][1][:5] == "raise":
+                        bet = eval(players[i][1][6:])
+                        if bet == players[i][2]:
+                            print("allin")
+                            pot += players[i][2]
+                            players[i][2] = 0  #monies to 0
+                            players[i][4] += bet
+                            players[i][5] = 1
+                            continue
+                            
+                        pot += bet #bet is added to pot
+                        betInc = bet #
+                        players[i][2] += -(bet) #take money from player
+                        highestBet = bet
+                        
+                        
+                    elif players[i][1] == "fold":
+                        print("Player",players[i][0],"folded")
+                        players[i][0] = "no"
+                                    
+                    elif players[i][1] == "call":  
+                        pot += betInc
+                        players[i][2] += -(betInc)
+
+                    elif players[i][1] == "check":
+                        print("Player",players[i][0],"checked")
+                        
+                        
+                    elif players[i][1] == "savegame":
+                        saveGame("homoW")
+            #For
+        #while
+            
+        break
+    print("game END")
     #Blind moves forward
     #saveWinner(checkWinner(players,table))
 
